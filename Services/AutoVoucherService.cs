@@ -12,7 +12,9 @@ using Npgsql;
 
 namespace WebBanHang.Services
 {
-    public class AutoVoucherService : BackgroundService
+    // Tạm thời disable service bằng cách đổi tên class
+    // public class AutoVoucherService : BackgroundService
+    public class AutoVoucherService_DISABLED : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
 
