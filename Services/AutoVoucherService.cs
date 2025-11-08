@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using WebBanHang.Data;
 using WebBanHang.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace WebBanHang.Services
 {
@@ -21,12 +22,34 @@ namespace WebBanHang.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Đợi một chút để đảm bảo migrations đã chạy xong
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
-                using (var scope = _scopeFactory.CreateScope())
+                try
                 {
-                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    await AssignVouchersToEligibleUsers(context);
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                        
+                        // Kiểm tra xem database đã sẵn sàng chưa
+                        if (!await IsDatabaseReadyAsync(context))
+                        {
+                            Console.WriteLine("[AutoVoucherService] Database not ready yet, waiting...");
+                            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                            continue;
+                        }
+
+                        await AssignVouchersToEligibleUsers(context);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[AutoVoucherService] Error: {ex.Message}");
+                    // Nếu có lỗi, đợi 5 phút trước khi thử lại
+                    await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    continue;
                 }
 
                 // Chờ 1 giờ rồi chạy lại
@@ -34,53 +57,100 @@ namespace WebBanHang.Services
             }
         }
 
+        private async Task<bool> IsDatabaseReadyAsync(ApplicationDbContext context)
+        {
+            try
+            {
+                // Thử query một bảng đơn giản để kiểm tra database đã sẵn sàng
+                await context.Database.ExecuteSqlRawAsync("SELECT 1");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private async Task AssignVouchersToEligibleUsers(ApplicationDbContext context)
         {
-            const int pointThreshold = 500; // Ngưỡng điểm để nhận voucher
-            const string templateCode = "REWARD_50K"; // Mã của voucher mẫu
-
-            // Tìm voucher mẫu
-            var voucherTemplate = await context.Vouchers.FirstOrDefaultAsync(v => v.IsTemplate && v.Code == templateCode);
-            if (voucherTemplate == null)
+            try
             {
-                return;
-            }
+                const int pointThreshold = 500; // Ngưỡng điểm để nhận voucher
+                const string templateCode = "REWARD_50K"; // Mã của voucher mẫu
 
-            // Tìm tất cả user đủ điểm
-            var eligibleUsers = await context.Users.Where(u => u.Points >= pointThreshold).ToListAsync();
-
-            foreach (var user in eligibleUsers)
-            {
-                // Tạo một voucher mới từ mẫu
-                var newVoucher = new Voucher
+                // Kiểm tra xem bảng Vouchers có tồn tại không
+                try
                 {
-                    Code = $"REWARD_{Guid.NewGuid().ToString("N").ToUpper().Substring(0, 8)}",
-                    DiscountType = voucherTemplate.DiscountType,
-                    DiscountValue = voucherTemplate.DiscountValue,
-                    MinAmount = voucherTemplate.MinAmount,
-                    ExpiryDate = DateTime.Now.AddDays(30), // Hạn dùng 30 ngày
-                    IsActive = true,
-                    IsTemplate = false,
-                    UserId = user.Id
-                };
-
-                context.Vouchers.Add(newVoucher);
-                var notification = new Notification
+                    await context.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"Vouchers\" LIMIT 1");
+                }
+                catch (PostgresException pgEx) when (pgEx.SqlState == "42P01") // Table does not exist
                 {
-                    UserId = user.Id,
-                    Message = $"Chúc mừng! Bạn nhận được voucher thưởng do tích đủ {pointThreshold} điểm.",
-                    Url = "/Account/MyVouchers"
-                };
-                context.Notifications.Add(notification);
+                    Console.WriteLine("[AutoVoucherService] Vouchers table does not exist yet, skipping...");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    // Kiểm tra nếu là lỗi table không tồn tại (cho SQL Server)
+                    if (ex.Message.Contains("does not exist") || ex.Message.Contains("Invalid object name"))
+                    {
+                        Console.WriteLine("[AutoVoucherService] Vouchers table does not exist yet, skipping...");
+                        return;
+                    }
+                    throw;
+                }
 
-                // Trừ điểm của user
-                user.Points -= pointThreshold;
-                context.Users.Update(user);
+                // Tìm voucher mẫu
+                var voucherTemplate = await context.Vouchers.FirstOrDefaultAsync(v => v.IsTemplate && v.Code == templateCode);
+                if (voucherTemplate == null)
+                {
+                    return;
+                }
+
+                // Tìm tất cả user đủ điểm
+                var eligibleUsers = await context.Users.Where(u => u.Points >= pointThreshold).ToListAsync();
+
+                foreach (var user in eligibleUsers)
+                {
+                    // Tạo một voucher mới từ mẫu
+                    var newVoucher = new Voucher
+                    {
+                        Code = $"REWARD_{Guid.NewGuid().ToString("N").ToUpper().Substring(0, 8)}",
+                        DiscountType = voucherTemplate.DiscountType,
+                        DiscountValue = voucherTemplate.DiscountValue,
+                        MinAmount = voucherTemplate.MinAmount,
+                        ExpiryDate = DateTime.Now.AddDays(30), // Hạn dùng 30 ngày
+                        IsActive = true,
+                        IsTemplate = false,
+                        UserId = user.Id
+                    };
+
+                    context.Vouchers.Add(newVoucher);
+                    var notification = new Notification
+                    {
+                        UserId = user.Id,
+                        Message = $"Chúc mừng! Bạn nhận được voucher thưởng do tích đủ {pointThreshold} điểm.",
+                        Url = "/Account/MyVouchers"
+                    };
+                    context.Notifications.Add(notification);
+
+                    // Trừ điểm của user
+                    user.Points -= pointThreshold;
+                    context.Users.Update(user);
+                }
+
+                if (eligibleUsers.Any())
+                {
+                    await context.SaveChangesAsync();
+                }
             }
-
-            if (eligibleUsers.Any())
+            catch (PostgresException pgEx) when (pgEx.SqlState == "42P01") // Table does not exist
             {
-                await context.SaveChangesAsync();
+                Console.WriteLine("[AutoVoucherService] Database table does not exist yet, will retry later.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AutoVoucherService] Error in AssignVouchersToEligibleUsers: {ex.Message}");
+                // Không throw để service tiếp tục chạy
             }
         }
     }

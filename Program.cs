@@ -66,6 +66,12 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddHostedService<AutoVoucherService>();
 
+// Cấu hình để background service không làm crash app khi có lỗi
+builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
+{
+    opts.BackgroundServiceExceptionBehavior = Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore;
+});
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
