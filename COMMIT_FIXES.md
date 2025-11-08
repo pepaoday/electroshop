@@ -105,3 +105,4 @@ Kiểm tra logs trên Render để xem chi tiết lỗi:
 2. Click tab **"Logs"**
 3. Xem các dòng lỗi (màu đỏ)
 
+
