@@ -1,0 +1,189 @@
+@model IEnumerable<WebBanHang.Models.Voucher>
+@using WebBanHang.Models
+
+@{
+    ViewData["Title"] = "Quản lý Voucher";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<style>
+    body {
+        background-color: #1a1a1a;
+        color: #f8f9fa;
+    }
+
+    .admin-container {
+        background-color: #2c2c2c;
+        padding: 2rem;
+        border-radius: 16px;
+    }
+
+    .admin-table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .admin-table-header h2 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .admin-table thead th {
+        color: #adb5bd;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+        text-align: left;
+        padding: 1rem;
+        border-bottom: 2px solid #4a4a4a;
+    }
+
+    .admin-table tbody tr {
+        border-bottom: 1px solid #4a4a4a;
+    }
+    
+    .admin-table tbody tr:last-of-type {
+        border-bottom: none;
+    }
+
+    .admin-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .admin-table .actions-cell {
+        text-align: right;
+    }
+
+    /* Tag trạng thái */
+    .status-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .status-active {
+        background-color: #198754;
+        color: #fff;
+    }
+    .status-inactive {
+        background-color: #6c757d;
+        color: #fff;
+    }
+
+    /* Tùy chỉnh nút */
+    .btn-custom-red {
+        background-color: #d9232d; 
+        border-color: #d9232d; 
+        color: white;
+    }
+    .btn-custom-red:hover {
+        background-color: #b01c24; 
+        border-color: #a51a21; 
+    }
+
+    /* Tùy chỉnh Alert */
+    .alert-success-dark {
+        background-color: #198754;
+        color: white;
+        border: none;
+        border-radius: 8px;
+    }
+</style>
+
+<div class="container my-5">
+    <div class="admin-container">
+        <div class="admin-table-header">
+            <h2>Quản lý Voucher</h2>
+            <div class="d-flex gap-2">
+                 <a asp-action="CreateVoucher" class="btn btn-custom-red">Tạo Voucher mới</a>
+                 <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
+            </div>
+        </div>
+
+        @if (TempData["Message"] != null)
+        {
+            <div class="alert alert-success-dark alert-dismissible fade show" role="alert" id="successAlert">
+                @TempData["Message"]
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Mã Code</th>
+                    <th>Loại giảm giá</th>
+                    <th>Giá trị</th>
+                    <th>Gán cho User</th>
+                    <th>Kích hoạt</th>
+                    <th class="text-end">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><strong>@item.Code</strong></td>
+                        <td>
+                            @(item.DiscountType == DiscountType.Percentage ? "Phần trăm" : "Số tiền cố định")
+                        </td>
+                        <td>
+                            @if (item.DiscountType == DiscountType.Percentage)
+                            {
+                                <span class="fw-bold text-success">@item.DiscountValue %</span>
+                            }
+                            else
+                            {
+                                <span class="fw-bold text-success">@item.DiscountValue.ToString("N0") ₫</span>
+                            }
+                        </td>
+                        <td>
+                            @* Thêm cột này để hiển thị voucher đã được gán cho ai *@
+                            @(item.User?.Username ?? "Voucher công khai")
+                        </td>
+                        <td>
+                            @if(item.IsActive)
+                            {
+                                <span class="status-badge status-active">Kích hoạt</span>
+                            }
+                            else
+                            {
+                                <span class="status-badge status-inactive">Vô hiệu</span>
+                            }
+                        </td>
+                        <td class="actions-cell">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a asp-action="AssignVoucher" asp-route-voucherId="@item.Id" class="btn btn-sm btn-outline-primary">Gán</a>
+                                <a asp-action="EditVoucher" asp-route-id="@item.Id" class="btn btn-sm btn-outline-light">Sửa</a>
+                                <a asp-action="DeleteVoucher" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc muốn xóa voucher này?');">Xóa</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Tự động ẩn thông báo thành công sau vài giây
+        var alertBox = document.getElementById('successAlert');
+        if(alertBox) {
+            setTimeout(function () {
+                var bsAlert = new bootstrap.Alert(alertBox);
+                bsAlert.close();
+            }, 1000); 
+        }
+    });
+    </script>
+}

@@ -1,0 +1,44 @@
+# Render.com Blueprint Configuration
+# File này giúp tự động setup Web Service và Database trên Render
+
+services:
+  # Web Service
+  - type: web
+    name: electroshop
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    healthCheckPath: /
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: electroshop-db
+          property: connectionString
+      - key: VnPay__TmnCode
+        value: SJBLAJF0
+      - key: VnPay__HashSecret
+        value: 3BY72RWVVTO43M9JEYSHVG9KHA1MA5TU
+      - key: VnPay__BaseUrl
+        value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - key: VnPay__ReturnUrl
+        sync: false  # Sẽ cập nhật sau khi deploy
+      - key: EmailSettings__SmtpServer
+        value: smtp.gmail.com
+      - key: EmailSettings__SmtpPort
+        value: 587
+      - key: EmailSettings__SenderEmail
+        value: nguyenminh01060210@gmail.com
+      - key: EmailSettings__SenderPassword
+        value: dseh xfyl eplj uuxg
+
+databases:
+  # PostgreSQL Database
+  - name: electroshop-db
+    databaseName: DoAnWebNCDB
+    user: electroshop_user
+    plan: free
+    region: singapore
+
