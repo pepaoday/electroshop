@@ -79,7 +79,10 @@ builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
 // Tạm thời disable background service - sẽ enable lại sau khi migrations chạy xong
 // XÓA HOÀN TOÀN để đảm bảo service không chạy
 // builder.Services.AddHostedService<AutoVoucherService>();
-Console.WriteLine("[CONFIG] AutoVoucherService is DISABLED - will enable after migrations complete");
+Console.WriteLine("[CONFIG] =========================================");
+Console.WriteLine("[CONFIG] AutoVoucherService is DISABLED");
+Console.WriteLine("[CONFIG] File has been completely removed");
+Console.WriteLine("[CONFIG] =========================================");
 
 var app = builder.Build();
 
@@ -110,7 +113,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     
     // Bỏ qua migrations - chỉ log
-    Console.WriteLine("[MIGRATION] Skipping migrations for now - will create PostgreSQL migrations later");
+    Console.WriteLine("[MIGRATION] =========================================");
+    Console.WriteLine("[MIGRATION] Skipping all migrations temporarily");
+    Console.WriteLine("[MIGRATION] Will create PostgreSQL migrations later");
+    Console.WriteLine("[MIGRATION] =========================================");
     
     // Seed admin - chỉ thử nếu tables đã tồn tại
     try
