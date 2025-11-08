@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Linq;
 using WebBanHang.Data;
-using WebBanHang.Services;
+// using WebBanHang.Services; // Comment out để tránh compile AutoVoucherService
 
 var builder = WebApplication.CreateBuilder(args);
 
