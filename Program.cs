@@ -77,17 +77,9 @@ builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
 });
 
 // Tạm thời disable background service - sẽ enable lại sau khi migrations chạy xong
-// Chỉ enable nếu biến môi trường ENABLE_AUTO_VOUCHER_SERVICE được set
-var enableAutoVoucher = Environment.GetEnvironmentVariable("ENABLE_AUTO_VOUCHER_SERVICE");
-if (enableAutoVoucher?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
-{
-    builder.Services.AddHostedService<AutoVoucherService>();
-    Console.WriteLine("[CONFIG] AutoVoucherService enabled");
-}
-else
-{
-    Console.WriteLine("[CONFIG] AutoVoucherService disabled (set ENABLE_AUTO_VOUCHER_SERVICE=true to enable)");
-}
+// XÓA HOÀN TOÀN để đảm bảo service không chạy
+// builder.Services.AddHostedService<AutoVoucherService>();
+Console.WriteLine("[CONFIG] AutoVoucherService is DISABLED - will enable after migrations complete");
 
 var app = builder.Build();
 
