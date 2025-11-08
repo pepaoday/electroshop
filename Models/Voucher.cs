@@ -16,7 +16,7 @@ namespace WebBanHang.Models
         public int Id { get; set; }
 
         [Required]
-        public string Code { get; set; }
+        public string Code { get; set; } = string.Empty;
 
         public DiscountType DiscountType { get; set; } // Loại giảm giá
 

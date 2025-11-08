@@ -190,11 +190,14 @@
 <div class="container mb-5">
     <h2 class="section-title">Khám Phá Danh Mục</h2>
     <div class="category-section">
-        @foreach (var item in ViewBag.Categories as List<WebBanHang.Models.Category>)
+        @if (ViewBag.Categories is List<WebBanHang.Models.Category> categories)
         {
-            <a asp-controller="Home" asp-action="ProductsByCategory" asp-route-categoryId="@item.Id" class="category-link">
-                @item.Name
-            </a>
+            @foreach (var item in categories)
+            {
+                <a asp-controller="Home" asp-action="ProductsByCategory" asp-route-categoryId="@item.Id" class="category-link">
+                    @item.Name
+                </a>
+            }
         }
     </div>
 </div>
@@ -225,8 +228,10 @@
 <div class="container">
     <h2 class="section-title">Sản Phẩm Nổi Bật</h2>
     <div class="row">
-        @foreach (var product in ViewBag.Products as List<WebBanHang.Models.Product>)
+        @if (ViewBag.Products is List<WebBanHang.Models.Product> products)
         {
+            @foreach (var product in products)
+            {
             <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
                 <div class="card product-card h-100">
                     @if (product.ImageData != null && product.ImageData.Length > 0)
@@ -254,6 +259,7 @@
                     </div>
                 </div>
             </div>
+            }
         }
     </div>
 </div>

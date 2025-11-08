@@ -265,7 +265,7 @@ namespace WebBanHang.Controllers
                     (order, user) => new OrderViewModel
                     {
                         OrderId = order.Id,
-                        Username = user.Username,
+                        Username = user.Username ?? string.Empty,
                         OrderDate = order.OrderDate,
                         TotalAmount = order.TotalAmount,
                         PaymentMethod = order.PaymentMethod,

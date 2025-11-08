@@ -24,7 +24,7 @@ namespace WebBanHang.Services
             var vnpay = new VnPayLibrary();
             vnpay.AddRequestData("vnp_Version", "2.1.0");
             vnpay.AddRequestData("vnp_Command", "pay");
-            vnpay.AddRequestData("vnp_TmnCode", _config["VnPay:TmnCode"]);
+            vnpay.AddRequestData("vnp_TmnCode", _config["VnPay:TmnCode"] ?? "");
             vnpay.AddRequestData("vnp_Amount", (model.Amount * 100).ToString());
             vnpay.AddRequestData("vnp_CreateDate", model.CreatedDate.ToString("yyyyMMddHHmmss"));
             vnpay.AddRequestData("vnp_CurrCode", "VND");
@@ -32,10 +32,10 @@ namespace WebBanHang.Services
             vnpay.AddRequestData("vnp_Locale", "vn");
             vnpay.AddRequestData("vnp_OrderInfo", "Thanh toan don hang:" + model.OrderId);
             vnpay.AddRequestData("vnp_OrderType", "other");
-            vnpay.AddRequestData("vnp_ReturnUrl", _config["VnPay:ReturnUrl"]);
+            vnpay.AddRequestData("vnp_ReturnUrl", _config["VnPay:ReturnUrl"] ?? "");
             vnpay.AddRequestData("vnp_TxnRef", model.OrderId.ToString());
 
-            var paymentUrl = vnpay.CreateRequestUrl(_config["VnPay:BaseUrl"], _config["VnPay:HashSecret"]);
+            var paymentUrl = vnpay.CreateRequestUrl(_config["VnPay:BaseUrl"] ?? "", _config["VnPay:HashSecret"] ?? "");
             return paymentUrl;
         }
 
@@ -53,10 +53,10 @@ namespace WebBanHang.Services
             var vnp_orderId = Convert.ToInt64(vnpay.GetResponseData("vnp_TxnRef"));
             var vnp_TransactionNo = Convert.ToInt64(vnpay.GetResponseData("vnp_TransactionNo"));
             var vnp_ResponseCode = vnpay.GetResponseData("vnp_ResponseCode");
-            var vnp_SecureHash = collections["vnp_SecureHash"];
+            var vnp_SecureHash = collections["vnp_SecureHash"].ToString() ?? "";
             var vnp_Amount = Convert.ToDecimal(vnpay.GetResponseData("vnp_Amount")) / 100;
 
-            bool checkSignature = vnpay.ValidateSignature(vnp_SecureHash, _config["VnPay:HashSecret"]);
+            bool checkSignature = vnpay.ValidateSignature(vnp_SecureHash, _config["VnPay:HashSecret"] ?? "");
 
             if (!checkSignature)
             {
@@ -106,8 +106,8 @@ namespace WebBanHang.Services
     public class VnPayRequestModel
     {
         public int OrderId { get; set; }
-        public string FullName { get; set; }
-        public string Description { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public double Amount { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.Now;
     }
@@ -115,12 +115,12 @@ namespace WebBanHang.Services
     public class VnPayResponseModel
     {
         public bool Success { get; set; }
-        public string PaymentMethod { get; set; }
-        public string OrderDescription { get; set; }
-        public string OrderId { get; set; }
-        public string TransactionId { get; set; }
-        public string Token { get; set; }
-        public string VnPayResponseCode { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string OrderDescription { get; set; } = string.Empty;
+        public string OrderId { get; set; } = string.Empty;
+        public string TransactionId { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public string VnPayResponseCode { get; set; } = string.Empty;
         public decimal Amount { get; set; }
     }
 

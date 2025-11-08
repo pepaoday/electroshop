@@ -20,7 +20,7 @@ namespace WebBanHang.Models
 
 
 
-        public string PaymentMethod { get; set; } // "COD" hoặc "VNPAY"
+        public string PaymentMethod { get; set; } = string.Empty; // "COD" hoặc "VNPAY"
 
 
         public decimal SubTotal { get; set; }
