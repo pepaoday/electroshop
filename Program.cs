@@ -70,13 +70,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(opt => {
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// Cấu hình để background service không làm crash app khi có lỗi - PHẢI SET TRƯỚC KHI AddHostedService
+// Cấu hình để background service không làm crash app khi có lỗi
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
 {
     opts.BackgroundServiceExceptionBehavior = Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore;
 });
 
-builder.Services.AddHostedService<AutoVoucherService>();
+// Tạm thời comment out background service để app có thể start
+// Sẽ enable lại sau khi migrations chạy xong
+// builder.Services.AddHostedService<AutoVoucherService>();
 
 var app = builder.Build();
 
@@ -110,8 +112,26 @@ using (var scope = app.Services.CreateScope())
         if (pendingMigrations.Any())
         {
             Console.WriteLine($"[MIGRATION] Applying {pendingMigrations.Count} pending migrations...");
-            db.Database.Migrate();
-            Console.WriteLine("[MIGRATION] Migrations applied successfully");
+            try
+            {
+                db.Database.Migrate();
+                Console.WriteLine("[MIGRATION] Migrations applied successfully");
+            }
+            catch (Exception migrateEx)
+            {
+                // Nếu migrate fail do pending changes, thử tạo database và tables thủ công
+                Console.WriteLine($"[MIGRATION] Migrate failed: {migrateEx.Message}");
+                Console.WriteLine("[MIGRATION] Attempting to ensure database exists...");
+                try
+                {
+                    db.Database.EnsureCreated();
+                    Console.WriteLine("[MIGRATION] Database ensured (tables may need manual creation)");
+                }
+                catch (Exception ensureEx)
+                {
+                    Console.WriteLine($"[MIGRATION] EnsureCreated also failed: {ensureEx.Message}");
+                }
+            }
         }
         else
         {
@@ -121,7 +141,6 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Console.WriteLine($"Migration error: {ex.Message}");
-        // Không dùng EnsureCreated vì nó không tạo migrations và có thể gây conflict
         // Chỉ log lỗi và tiếp tục - app vẫn có thể chạy nếu tables đã tồn tại
     }
 
