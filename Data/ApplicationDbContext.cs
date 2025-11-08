@@ -84,7 +84,7 @@ namespace WebBanHang.Data
                     DiscountType = DiscountType.Percentage,
                     DiscountValue = 25m,
                     MinAmount = 200000m,
-                    ExpiryDate = new DateTime(2025, 12, 31, 23, 59, 59),
+                    ExpiryDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc),
                     IsActive = false,
                     IsTemplate = true
                 },
@@ -95,7 +95,7 @@ namespace WebBanHang.Data
                     DiscountType = DiscountType.FixedAmount,
                     DiscountValue = 50000m,
                     MinAmount = 300000m,
-                    ExpiryDate = new DateTime(2025, 10, 11, 23, 59, 59),
+                    ExpiryDate = new DateTime(2025, 10, 11, 23, 59, 59, DateTimeKind.Utc),
                     IsActive = true, // Các thuộc tính còn lại sẽ dùng giá trị mặc định (false)
                     IsTemplate = false
                 }

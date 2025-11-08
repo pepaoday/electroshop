@@ -180,3 +180,5 @@ Render Dashboard
 - Nếu thấy **"external"** hoặc **"public"** trong URL → Đó là External URL (không dùng)
 
 
+
+

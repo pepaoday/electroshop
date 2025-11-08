@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using WebBanHang.Data;
 using WebBanHang.Services;
 
@@ -99,13 +100,24 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
-        db.Database.Migrate();
+        // Kiểm tra xem có pending migrations không
+        var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+        if (pendingMigrations.Any())
+        {
+            Console.WriteLine($"[MIGRATION] Applying {pendingMigrations.Count} pending migrations...");
+            db.Database.Migrate();
+            Console.WriteLine("[MIGRATION] Migrations applied successfully");
+        }
+        else
+        {
+            Console.WriteLine("[MIGRATION] No pending migrations");
+        }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Migration error: {ex.Message}. Trying EnsureCreated()...");
-        try { db.Database.EnsureCreated(); }
-        catch (Exception ex2) { Console.WriteLine($"EnsureCreated error: {ex2.Message}"); }
+        Console.WriteLine($"Migration error: {ex.Message}");
+        // Không dùng EnsureCreated vì nó không tạo migrations và có thể gây conflict
+        // Chỉ log lỗi và tiếp tục - app vẫn có thể chạy nếu tables đã tồn tại
     }
 
     // Seed admin

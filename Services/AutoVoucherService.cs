@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -99,15 +100,52 @@ namespace WebBanHang.Services
                     throw;
                 }
 
-                // Tìm voucher mẫu
-                var voucherTemplate = await context.Vouchers.FirstOrDefaultAsync(v => v.IsTemplate && v.Code == templateCode);
+                // Tìm voucher mẫu - wrap trong try-catch để handle table not found
+                Voucher? voucherTemplate = null;
+                try
+                {
+                    voucherTemplate = await context.Vouchers.FirstOrDefaultAsync(v => v.IsTemplate && v.Code == templateCode);
+                }
+                catch (PostgresException pgEx) when (pgEx.SqlState == "42P01")
+                {
+                    Console.WriteLine("[AutoVoucherService] Vouchers table does not exist yet, skipping...");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message.Contains("does not exist") || ex.Message.Contains("Invalid object name"))
+                    {
+                        Console.WriteLine("[AutoVoucherService] Vouchers table does not exist yet, skipping...");
+                        return;
+                    }
+                    throw;
+                }
+
                 if (voucherTemplate == null)
                 {
                     return;
                 }
 
-                // Tìm tất cả user đủ điểm
-                var eligibleUsers = await context.Users.Where(u => u.Points >= pointThreshold).ToListAsync();
+                // Tìm tất cả user đủ điểm - wrap trong try-catch
+                List<User> eligibleUsers;
+                try
+                {
+                    eligibleUsers = await context.Users.Where(u => u.Points >= pointThreshold).ToListAsync();
+                }
+                catch (PostgresException pgEx) when (pgEx.SqlState == "42P01")
+                {
+                    Console.WriteLine("[AutoVoucherService] Users table does not exist yet, skipping...");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.Message.Contains("does not exist") || ex.Message.Contains("Invalid object name"))
+                    {
+                        Console.WriteLine("[AutoVoucherService] Users table does not exist yet, skipping...");
+                        return;
+                    }
+                    throw;
+                }
 
                 foreach (var user in eligibleUsers)
                 {
