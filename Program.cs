@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Linq;
 using WebBanHang.Data;
 using WebBanHang.Services;
@@ -61,17 +62,21 @@ builder.Services.AddDbContext<ApplicationDbContext>(opt => {
         Console.WriteLine("[DEBUG] Using SQL Server provider");
         opt.UseSqlServer(connectionString);
     }
+    // Suppress warning về pending model changes để migrations có thể chạy
+    opt.ConfigureWarnings(warnings => 
+        warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
 });
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
-builder.Services.AddHostedService<AutoVoucherService>();
 
-// Cấu hình để background service không làm crash app khi có lỗi
+// Cấu hình để background service không làm crash app khi có lỗi - PHẢI SET TRƯỚC KHI AddHostedService
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(opts =>
 {
     opts.BackgroundServiceExceptionBehavior = Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior.Ignore;
 });
+
+builder.Services.AddHostedService<AutoVoucherService>();
 
 var app = builder.Build();
 

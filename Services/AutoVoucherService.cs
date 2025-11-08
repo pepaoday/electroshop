@@ -23,8 +23,8 @@ namespace WebBanHang.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Đợi một chút để đảm bảo migrations đã chạy xong
-            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+            // Đợi lâu hơn để đảm bảo migrations đã chạy xong (30 giây)
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
             {
