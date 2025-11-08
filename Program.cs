@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Linq;
 using WebBanHang.Data;
-// using WebBanHang.Services; // Comment out để tránh compile AutoVoucherService
+using WebBanHang.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,49 +103,16 @@ app.MapControllerRoute(
 );
 
 // ===== Migrate DB với CHÍNH connectionString & provider ở trên =====
+// Tạm thời bỏ qua migrations để app có thể start
+// Sẽ tạo migration mới cho PostgreSQL sau
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    try
-    {
-        // Kiểm tra xem có pending migrations không
-        var pendingMigrations = db.Database.GetPendingMigrations().ToList();
-        if (pendingMigrations.Any())
-        {
-            Console.WriteLine($"[MIGRATION] Applying {pendingMigrations.Count} pending migrations...");
-            try
-            {
-                db.Database.Migrate();
-                Console.WriteLine("[MIGRATION] Migrations applied successfully");
-            }
-            catch (Exception migrateEx)
-            {
-                // Nếu migrate fail do pending changes, thử tạo database và tables thủ công
-                Console.WriteLine($"[MIGRATION] Migrate failed: {migrateEx.Message}");
-                Console.WriteLine("[MIGRATION] Attempting to ensure database exists...");
-                try
-                {
-                    db.Database.EnsureCreated();
-                    Console.WriteLine("[MIGRATION] Database ensured (tables may need manual creation)");
-                }
-                catch (Exception ensureEx)
-                {
-                    Console.WriteLine($"[MIGRATION] EnsureCreated also failed: {ensureEx.Message}");
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine("[MIGRATION] No pending migrations");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Migration error: {ex.Message}");
-        // Chỉ log lỗi và tiếp tục - app vẫn có thể chạy nếu tables đã tồn tại
-    }
-
-    // Seed admin
+    
+    // Bỏ qua migrations - chỉ log
+    Console.WriteLine("[MIGRATION] Skipping migrations for now - will create PostgreSQL migrations later");
+    
+    // Seed admin - chỉ thử nếu tables đã tồn tại
     try
     {
         var existingAdmin = db.Users.FirstOrDefault(u => u.Username == "admin");
@@ -160,6 +127,7 @@ using (var scope = app.Services.CreateScope())
                 Address = "Trụ sở chính"
             });
             db.SaveChanges();
+            Console.WriteLine("[SEED] Admin user created");
         }
         else
         {
@@ -167,11 +135,12 @@ using (var scope = app.Services.CreateScope())
             existingAdmin.Role = "Admin";
             db.Users.Update(existingAdmin);
             db.SaveChanges();
+            Console.WriteLine("[SEED] Admin user updated");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error initializing admin user: {ex.Message}");
+        Console.WriteLine($"[SEED] Error initializing admin user (tables may not exist yet): {ex.Message}");
     }
 }
 
